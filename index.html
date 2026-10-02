@@ -1,697 +1,243 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl" class="dark">
+<html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>زمان‌پرو | مرکز جامع زمان، تاریخ، اوقات شرعی و تبدیل تاریخ</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#060a12',
-                        cardBg: 'rgba(15, 23, 42, 0.85)',
-                        neonCyan: '#00f3ff',
-                        emeraldAccent: '#10b981',
-                        amberGold: '#f59e0b',
-                        purpleRose: '#a855f7'
-                    },
-                    fontFamily: {
-                        vazir: ['Vazirmatn', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <style>
-        body {
-            font-family: 'Vazirmatn', sans-serif;
-            background-color: #060a12;
-            color: #f1f5f9;
-            overflow-x: hidden;
-        }
-        .glow-box {
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.12);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-        }
-        .glass {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
-        }
-        .gradient-text {
-            background: linear-gradient(135deg, #00f3ff 0%, #10b981 50%, #a855f7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .tab-btn.active {
-            background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(16, 185, 129, 0.2));
-            border-color: #00f3ff;
-            color: #00f3ff;
-            font-weight: 700;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تبدیلگر | هوشمند و کاربردی</title>
+  <style>
+    :root {
+      --bg-main: #fdfbf7;
+      --bg-card: #ffffff;
+      --primary: #5c3a21;
+      --primary-hover: #422815;
+      --secondary: #8c5a35;
+      --cream-light: #f5efe6;
+      --cream-medium: #e8dccb;
+      --accent-gold: #d4a373;
+      --text-dark: #2b1e16;
+      --text-muted: #6e5d4f;
+      --border-color: #dfd0be;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-dark); padding: 15px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 600px; background: var(--bg-card); border-radius: 20px; border: 2px solid var(--border-color); box-shadow: 0 10px 25px rgba(92,58,33,0.1); overflow: hidden; }
+    .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; padding: 20px; text-align: center; }
+    .header h1 { font-size: 24px; margin-bottom: 5px; color: var(--cream-light); }
+    .nav-tabs { display: flex; background: var(--cream-medium); padding: 5px; gap: 5px; border-bottom: 1px solid var(--border-color); }
+    .tab-btn { flex: 1; padding: 10px 5px; border: none; background: transparent; color: var(--text-dark); font-weight: bold; font-size: 13px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+    .content-section { display: none; padding: 20px; }
+    .content-section.active { display: block; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 13px; color: var(--text-muted); }
+    input, select { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 16px; background: var(--bg-main); color: var(--text-dark); text-align: center; outline: none; }
+    input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(92,58,33,0.2); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .result-box { background: var(--cream-light); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); margin-top: 5px; min-height: 48px; word-break: break-all; }
+    .calc-btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .btn { padding: 12px; border: none; border-radius: 10px; background: var(--cream-medium); color: var(--primary); font-size: 18px; font-weight: bold; cursor: pointer; }
+    .btn:active { background: var(--accent-gold); }
+    .btn-action { background: var(--primary); color: #fff; }
+    .btn-action:hover { background: var(--primary-hover); }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between">
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>تبدیلگر</h1>
+      <p style="font-size:12px; opacity:0.9;">مبدل ارز، اعداد، درصد و ماشین حساب</p>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('num')">تبدیل اعداد</button>
+      <button class="tab-btn" onclick="switchTab('curr')">تبدیل ارز</button>
+      <button class="tab-btn" onclick="switchTab('disc')">تخفیف / درصد</button>
+      <button class="tab-btn" onclick="switchTab('calc')">ماشین حساب</button>
+    </div>
 
-    <!-- Header -->
-    <header class="sticky top-0 z-50 glass border-b border-slate-800/80">
-        <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-emerald-500 to-purple-600 flex items-center justify-center text-slate-950 shadow-lg shadow-cyan-500/20 font-black text-xl">
-                    <i class="fa-solid fa-clock"></i>
-                </div>
-                <div>
-                    <span class="text-2xl font-black gradient-text tracking-wide">ZamanPro</span>
-                    <span class="block text-[10px] text-slate-400">مرکز هوشمند زمان و تاریخ</span>
-                </div>
-            </div>
-            
-            <div id="topHeaderClock" class="hidden sm:flex items-center gap-2 bg-slate-900/90 px-3.5 py-1.5 rounded-full border border-slate-800 text-xs font-mono text-cyan-400">
-                <i class="fa-regular fa-clock text-emerald-400"></i>
-                <span id="liveHeaderTime">00:00:00</span>
-            </div>
+    <!-- بخش اعداد -->
+    <div id="sec-num" class="content-section active">
+      <div class="form-group">
+        <label>ورودی (عدد فارسی/انگلیسی یا حروف فارسی/انگلیسی):</label>
+        <input type="text" id="numInput" placeholder="مثلاً: 12 یا ۱۲ یا دوازده یا twelve" oninput="convertNumber()">
+      </div>
+      <div class="grid-2">
+        <div>
+          <label>ارقام انگلیسی (123):</label>
+          <div class="result-box" id="resEnDigits">-</div>
         </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
-
-        <!-- Hero Section: Live Clock & Today's Dates -->
-        <section class="glass rounded-3xl p-6 sm:p-8 glow-border relative overflow-hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                
-                <!-- Main Live Time -->
-                <div class="lg:col-span-5 text-center lg:text-right space-y-3">
-                    <div class="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-full text-xs text-cyan-300 font-semibold">
-                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                        <span>ساعت رسمی ایران (IRST)</span>
-                    </div>
-                    <div id="mainDigitalClock" class="text-5xl sm:text-7xl font-black font-mono text-cyan-400 tracking-wider drop-shadow-[0_0_20px_rgba(0,243,255,0.3)]">
-                        00:00:00
-                    </div>
-                    <p id="mainDayOfWeek" class="text-lg font-bold text-emerald-400">در حال دریافت تاریخ...</p>
-                </div>
-
-                <!-- Triple Calendar Display -->
-                <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <!-- Jalali -->
-                    <div class="bg-slate-900/90 p-4 rounded-2xl border border-cyan-500/30 text-center space-y-1">
-                        <span class="text-[11px] text-cyan-400 font-semibold block"><i class="fa-solid fa-sun ml-1"></i>هجری خورشیدی</span>
-                        <div id="dateJalali" class="text-lg font-bold text-slate-100">---</div>
-                    </div>
-                    <!-- Gregorian -->
-                    <div class="bg-slate-900/90 p-4 rounded-2xl border border-emerald-500/30 text-center space-y-1">
-                        <span class="text-[11px] text-emerald-400 font-semibold block"><i class="fa-solid fa-globe ml-1"></i>میلادی (Gregorian)</span>
-                        <div id="dateGregorian" class="text-lg font-bold text-slate-100 font-mono">---</div>
-                    </div>
-                    <!-- Hijri -->
-                    <div class="bg-slate-900/90 p-4 rounded-2xl border border-amber-500/30 text-center space-y-1">
-                        <span class="text-[11px] text-amber-400 font-semibold block"><i class="fa-solid fa-moon ml-1"></i>هجری قمری</span>
-                        <div id="dateHijri" class="text-lg font-bold text-slate-100">---</div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- Navigation Tabs -->
-        <div class="flex flex-wrap gap-2 justify-center border-b border-slate-800 pb-4">
-            <button onclick="switchTab('prayer')" id="tab-prayer" class="tab-btn active px-5 py-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-xs sm:text-sm font-semibold transition flex items-center gap-2">
-                <i class="fa-solid fa-mosque"></i> اوقات شرعی شهرهای ایران
-            </button>
-            <button onclick="switchTab('world')" id="tab-world" class="tab-btn px-5 py-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-xs sm:text-sm font-semibold transition flex items-center gap-2">
-                <i class="fa-solid fa-earth-americas"></i> ساعت جهانی
-            </button>
-            <button onclick="switchTab('convert')" id="tab-convert" class="tab-btn px-5 py-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-xs sm:text-sm font-semibold transition flex items-center gap-2">
-                <i class="fa-solid fa-arrows-rotate"></i> تبدیل تاریخ
-            </button>
-            <button onclick="switchTab('age')" id="tab-age" class="tab-btn px-5 py-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-xs sm:text-sm font-semibold transition flex items-center gap-2">
-                <i class="fa-solid fa-cake-candles"></i> محاسبه‌گر دقیق سن
-            </button>
+        <div>
+          <label>ارقام فارسی (۱۲۳):</label>
+          <div class="result-box" id="resFaDigits">-</div>
         </div>
-
-        <!-- TAB 1: PRAYER TIMES -->
-        <section id="sec-prayer" class="space-y-6">
-            <div class="glass p-6 rounded-3xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                        <i class="fa-solid fa-kaaba text-amber-400"></i> اوقات شرعی به افق شهرهای ایران
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-1">شهر خود را انتخاب کنید تا اذان‌ها و تایمر تا اذان بعدی محاسبه شود.</p>
-                </div>
-                
-                <!-- City Selector -->
-                <div class="w-full sm:w-64">
-                    <select id="citySelect" onchange="updatePrayerTimes()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-400">
-                        <!-- Cities auto filled -->
-                    </select>
-                </div>
-            </div>
-
-            <!-- Next Prayer Banner -->
-            <div id="nextPrayerBanner" class="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 p-5 rounded-2xl border border-emerald-500/30 flex flex-wrap justify-between items-center gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
-                        <i class="fa-solid fa-hourglass-half animate-spin"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs text-slate-400 block">زمان باقی‌مانده تا <strong id="nextPrayerName" class="text-emerald-400">---</strong>:</span>
-                        <span id="nextPrayerCountdown" class="text-2xl font-black font-mono text-emerald-300">00:00:00</span>
-                    </div>
-                </div>
-                <div class="text-xs text-slate-400">
-                    شهر انتخابی: <strong id="selectedCityName" class="text-cyan-300">تهران</strong>
-                </div>
-            </div>
-
-            <!-- Prayer Grid Cards -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
-                    <i class="fa-solid fa-cloud-moon text-indigo-400 text-xl"></i>
-                    <span class="block text-xs text-slate-400">اذان صبح</span>
-                    <span id="prayFajr" class="text-lg font-bold font-mono text-cyan-300">--:--</span>
-                </div>
-                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
-                    <i class="fa-solid fa-sun text-amber-400 text-xl"></i>
-                    <span class="block text-xs text-slate-400">طلوع آفتاب</span>
-                    <span id="praySunrise" class="text-lg font-bold font-mono text-amber-300">--:--</span>
-                </div>
-                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
-                    <i class="fa-solid fa-sun text-yellow-300 text-xl"></i>
-                    <span class="block text-xs text-slate-400">اذان ظهر</span>
-                    <span id="prayDhuhr" class="text-lg font-bold font-mono text-yellow-300">--:--</span>
-                </div>
-                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
-                    <i class="fa-solid fa-mountain-sun text-orange-400 text-xl"></i>
-                    <span class="block text-xs text-slate-400">غروب آفتاب</span>
-                    <span id="praySunset" class="text-lg font-bold font-mono text-orange-300">--:--</span>
-                </div>
-                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
-                    <i class="fa-solid fa-moon text-purple-400 text-xl"></i>
-                    <span class="block text-xs text-slate-400">اذان مغرب</span>
-                    <span id="prayMaghrib" class="text-lg font-bold font-mono text-purple-300">--:--</span>
-                </div>
-                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center space-y-2">
-                    <i class="fa-solid fa-star text-slate-400 text-xl"></i>
-                    <span class="block text-xs text-slate-400">نیمه‌شب شرعی</span>
-                    <span id="prayMidnight" class="text-lg font-bold font-mono text-slate-300">--:--</span>
-                </div>
-            </div>
-
-            <!-- Occasions Box -->
-            <div class="glass p-6 rounded-3xl border border-slate-800 space-y-3">
-                <h4 class="text-sm font-bold text-slate-200 flex items-center gap-2">
-                    <i class="fa-solid fa-calendar-day text-cyan-400"></i> مناسبت‌ها و رویدادهای امروز:
-                </h4>
-                <ul id="todayOccasions" class="space-y-2 text-xs text-slate-300">
-                    <li class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-check text-emerald-400"></i>
-                        <span>در حال بارگذاری مناسبت‌های روز...</span>
-                    </li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- TAB 2: WORLD CLOCKS -->
-        <section id="sec-world" class="hidden space-y-6">
-            <div class="glass p-6 rounded-3xl border border-slate-800">
-                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-globe text-cyan-400"></i> ساعت زنده پایتخت‌ها و شهرهای مهم جهان
-                </h3>
-                <p class="text-xs text-slate-400 mt-1">نمایش آنلاین زمان جهانی با محاسبه اختلاف ساعت لحظه‌ای.</p>
-            </div>
-
-            <div id="worldClocksGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Auto Generated World City Cards -->
-            </div>
-        </section>
-
-        <!-- TAB 3: DATE CONVERTER -->
-        <section id="sec-convert" class="hidden space-y-6">
-            <div class="glass p-6 rounded-3xl border border-slate-800">
-                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-arrows-rotate text-purple-400"></i> مبدل هوشمند و دقیق تاریخ
-                </h3>
-                <p class="text-xs text-slate-400 mt-1">تبدیل تاریخ‌های شمسی، میلادی و هجری قمری به یکدیگر.</p>
-            </div>
-
-            <div class="glass p-6 rounded-3xl border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Source Selection -->
-                <div class="space-y-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
-                    <label class="block text-xs font-bold text-cyan-300">ورودی سال / ماه / روز (شمسی):</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <input type="number" id="convYear" placeholder="سال (1405)" value="1405" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-center text-slate-100 focus:outline-none focus:border-cyan-400">
-                        <input type="number" id="convMonth" placeholder="ماه (7)" value="7" min="1" max="12" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-center text-slate-100 focus:outline-none focus:border-cyan-400">
-                        <input type="number" id="convDay" placeholder="روز (10)" value="10" min="1" max="31" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-center text-slate-100 focus:outline-none focus:border-cyan-400">
-                    </div>
-                    <button onclick="convertJalaliDate()" class="w-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black py-2.5 rounded-xl transition text-xs shadow-lg shadow-cyan-500/20">
-                        تبدیل تاریخ
-                    </button>
-                </div>
-
-                <!-- Results -->
-                <div class="md:col-span-2 space-y-4">
-                    <div class="bg-slate-900/90 p-4 rounded-2xl border border-emerald-500/30 flex justify-between items-center">
-                        <div>
-                            <span class="text-[11px] text-emerald-400 block font-semibold">معادل تاریخ میلادی:</span>
-                            <span id="resGregorian" class="text-lg font-bold font-mono text-slate-100">---</span>
-                        </div>
-                        <i class="fa-solid fa-calendar-days text-emerald-400 text-2xl"></i>
-                    </div>
-
-                    <div class="bg-slate-900/90 p-4 rounded-2xl border border-amber-500/30 flex justify-between items-center">
-                        <div>
-                            <span class="text-[11px] text-amber-400 block font-semibold">معادل تاریخ هجری قمری:</span>
-                            <span id="resHijri" class="text-lg font-bold text-slate-100">---</span>
-                        </div>
-                        <i class="fa-solid fa-moon text-amber-400 text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 4: AGE CALCULATOR -->
-        <section id="sec-age" class="hidden space-y-6">
-            <div class="glass p-6 rounded-3xl border border-slate-800">
-                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-cake-candles text-purple-400"></i> محاسبه‌گر هوشمند سن و طالع‌بینی
-                </h3>
-                <p class="text-xs text-slate-400 mt-1">تاریخ تولد شمسی خود را وارد کنید تا سن دقیق زنده و مشخصات آن محاسبه شود.</p>
-            </div>
-
-            <div class="glass p-6 rounded-3xl border border-slate-800 grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Input Birthdate -->
-                <div class="lg:col-span-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <label class="block text-xs font-bold text-purple-300">تاریخ تولد خود را وارد کنید:</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <input type="number" id="birthYear" placeholder="سال (1380)" value="1380" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-center text-slate-100 focus:outline-none focus:border-purple-400">
-                        <input type="number" id="birthMonth" placeholder="ماه (1)" value="1" min="1" max="12" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-center text-slate-100 focus:outline-none focus:border-purple-400">
-                        <input type="number" id="birthDay" placeholder="روز (1)" value="1" min="1" max="31" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-center text-slate-100 focus:outline-none focus:border-purple-400">
-                    </div>
-                    <button onclick="startAgeCalc()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-2.5 rounded-xl transition text-xs shadow-lg shadow-purple-500/20">
-                        محاسبه سن دقیق
-                    </button>
-                </div>
-
-                <!-- Age Output Grid -->
-                <div class="lg:col-span-8 space-y-4">
-                    <!-- Live Ticking Age -->
-                    <div class="bg-gradient-to-r from-purple-950/50 to-slate-900 p-5 rounded-2xl border border-purple-500/30 flex flex-wrap justify-around items-center text-center gap-4">
-                        <div>
-                            <span id="ageYears" class="text-3xl font-black text-purple-300 font-mono">0</span>
-                            <span class="block text-[11px] text-slate-400">سال</span>
-                        </div>
-                        <span class="text-slate-600 font-bold">:</span>
-                        <div>
-                            <span id="ageMonths" class="text-3xl font-black text-purple-300 font-mono">0</span>
-                            <span class="block text-[11px] text-slate-400">ماه</span>
-                        </div>
-                        <span class="text-slate-600 font-bold">:</span>
-                        <div>
-                            <span id="ageDays" class="text-3xl font-black text-purple-300 font-mono">0</span>
-                            <span class="block text-[11px] text-slate-400">روز</span>
-                        </div>
-                        <span class="text-slate-600 font-bold">:</span>
-                        <div>
-                            <span id="ageSecs" class="text-3xl font-black text-cyan-400 font-mono">0</span>
-                            <span class="block text-[11px] text-slate-400">ثانیه زندگی</span>
-                        </div>
-                    </div>
-
-                    <!-- Zodiac & Details -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 text-center space-y-1">
-                            <span class="text-[10px] text-slate-400 block">نماد ماه تولد (صورت فلکی)</span>
-                            <span id="zodiacSign" class="text-xs font-bold text-amber-300">---</span>
-                        </div>
-                        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 text-center space-y-1">
-                            <span class="text-[10px] text-slate-400 block">سال حیوان (چینی)</span>
-                            <span id="animalYear" class="text-xs font-bold text-emerald-300">---</span>
-                        </div>
-                        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 text-center space-y-1">
-                            <span class="text-[10px] text-slate-400 block">روز هفته تولد</span>
-                            <span id="bornDayOfWeek" class="text-xs font-bold text-cyan-300">---</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-slate-800/80 py-5 text-center text-xs text-slate-500">
-        <p>© 2026 ZamanPro - مرکز جامع زمان و تاریخ | طراحی شیک و آفلاین.</p>
-    </footer>
-
-    <!-- Logic Script -->
-    <script>
-        // --- 1. CITY DATA FOR IRAN PRAYER TIMES ---
-        const cities = [
-            { name: "تهران", lat: 35.6892, lng: 51.3890 },
-            { name: "مشهد", lat: 36.2972, lng: 59.6067 },
-            { name: "اصفهان", lat: 32.6546, lng: 51.6680 },
-            { name: "شیراز", lat: 29.5918, lng: 52.5837 },
-            { name: "تبریز", lat: 38.0800, lng: 46.2919 },
-            { name: "اهواز", lat: 31.3183, lng: 48.6706 },
-            { name: "قم", lat: 34.6401, lng: 50.8764 },
-            { name: "رشت", lat: 37.2808, lng: 49.5832 },
-            { name: "کرمان", lat: 30.2839, lng: 57.0834 },
-            { name: "زاهدان", lat: 29.4963, lng: 60.8629 },
-            { name: "کرج", lat: 35.8400, lng: 50.9391 },
-            { name: "بوشهر", lat: 28.9234, lng: 50.8385 },
-            { name: "بندرعباس", lat: 27.1832, lng: 56.2666 },
-            { name: "یزد", lat: 31.8974, lng: 54.3675 },
-            { name: "ارومیه", lat: 37.5527, lng: 45.0761 },
-            { name: "اردبیل", lat: 38.2498, lng: 48.2933 },
-            { name: "کرمانشاه", lat: 34.3142, lng: 47.0650 },
-            { name: "همدان", lat: 34.7982, lng: 48.5146 },
-            { name: "زنجان", lat: 36.6736, lng: 48.4858 },
-            { name: "سنندج", lat: 35.3144, lng: 46.9923 },
-            { name: "خرم‌آباد", lat: 33.4878, lng: 48.3558 },
-            { name: "گرگان", lat: 36.8456, lng: 54.4393 },
-            { name: "ساری", lat: 36.5659, lng: 53.0586 },
-            { name: "اراک", lat: 34.0917, lng: 49.6892 },
-            { name: "قزوین", lat: 36.2688, lng: 50.0041 },
-            { name: "سمنان", lat: 35.5729, lng: 53.3971 },
-            { name: "شهرکرد", lat: 32.3256, lng: 50.8644 },
-            { name: "یاسوج", lat: 30.6684, lng: 51.5875 },
-            { name: "بجنورد", lat: 37.4747, lng: 57.3323 },
-            { name: "بیرجند", lat: 32.8663, lng: 59.2211 },
-            { name: "ایلام", lat: 33.6374, lng: 46.4227 }
-        ];
-
-        // --- 2. WORLD CLOCKS DATA ---
-        const worldCities = [
-            { name: "نیویورک", country: "آمریکا", zone: "America/New_York", icon: "fa-building-columns" },
-            { name: "لندن", country: "بریتانیا", zone: "Europe/London", icon: "fa-crown" },
-            { name: "پاریس", country: "فرانسه", zone: "Europe/Paris", icon: "fa-tower-observation" },
-            { name: "توکیو", country: "ژاپن", zone: "Asia/Tokyo", icon: "fa-torii-gate" },
-            { name: "دبی", country: "امارات", zone: "Asia/Dubai", icon: "fa-city" },
-            { name: "تورنتو", country: "کانادا", zone: "America/Toronto", icon: "fa-leaf" },
-            { name: "سیدنی", country: "استرالیا", zone: "Australia/Sydney", icon: "fa-water" },
-            { name: "استانبول", country: "ترکیه", zone: "Europe/Istanbul", icon: "fa-synagogue" }
-        ];
-
-        // Populate Cities dropdown
-        const citySelect = document.getElementById('citySelect');
-        cities.forEach((c, idx) => {
-            const opt = document.createElement('option');
-            opt.value = idx;
-            opt.innerText = c.name;
-            citySelect.appendChild(opt);
-        });
-
-        // --- 3. TAB SWITCHING ---
-        function switchTab(tab) {
-            ['prayer', 'world', 'convert', 'age'].forEach(t => {
-                document.getElementById(`sec-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('active');
-            });
-            document.getElementById(`sec-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-        }
-
-        // --- 4. DATE CONVERSION HELPERS ---
-        function jalaliToGregorian(jy, jm, jd) {
-            jy = parseInt(jy); jm = parseInt(jm); jd = parseInt(jd);
-            var jy2 = (jy <= 979) ? 0 : 979;
-            jy -= jy2;
-            var days = (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
-            var gy = 1600 + 400 * Math.floor(days / 146097);
-            days %= 146097;
-            var leap = true;
-            if (days >= 36525) {
-                days--;
-                gy += 100 * Math.floor(days / 36524);
-                days %= 36524;
-                if (days >= 365) days++;
-                else leap = false;
-            }
-            gy += 4 * Math.floor(days / 1461);
-            days %= 1461;
-            if (days >= 366) {
-                leap = false;
-                days--;
-                gy += Math.floor(days / 365);
-                days %= 365;
-            }
-            var gd = days + 1;
-            var sal_a = [0, 31, ((gy % 4 == 0 && gy % 100 != 0) || (gy % 400 == 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-            var gm;
-            for (gm = 0; gm < 13 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
-            return [gy + jy2, gm, gd];
-        }
-
-        function convertJalaliDate() {
-            const jy = document.getElementById('convYear').value;
-            const jm = document.getElementById('convMonth').value;
-            const jd = document.getElementById('convDay').value;
-
-            if (!jy || !jm || !jd) return;
-
-            const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd);
-            const gDate = new Date(gy, gm - 1, gd);
-
-            document.getElementById('resGregorian').innerText = `${gy} / ${String(gm).padStart(2,'0')} / ${String(gd).padStart(2,'0')}`;
-            
-            // Format Hijri
-            try {
-                const hijriFmt = new Intl.DateTimeFormat('fa-IR-u-ca-islamic-uma', { year: 'numeric', month: 'long', day: 'numeric' }).format(gDate);
-                document.getElementById('resHijri').innerText = hijriFmt;
-            } catch(e) {
-                document.getElementById('resHijri').innerText = "محاسبه شد";
-            }
-        }
-
-        // --- 5. PRAYER TIMES ASTRONOMICAL CALCULATOR ---
-        function computePrayerTimes(date, lat, lng) {
-            let D = (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(2000, 0, 1, 12, 0, 0)) / 86400000;
-            let g = 357.529 + 0.98560028 * D;
-            let q = 280.459 + 0.98564736 * D;
-            let L = q + 1.915 * Math.sin(g * Math.PI / 180) + 0.020 * Math.sin(2 * g * Math.PI / 180);
-            let e = 23.439 - 0.00000036 * D;
-            let RA = Math.atan2(Math.cos(e * Math.PI / 180) * Math.sin(L * Math.PI / 180), Math.cos(L * Math.PI / 180)) * 180 / Math.PI;
-            RA = (RA + 360) % 360;
-            let EqT = q/15 - RA/15;
-            let Decl = Math.asin(Math.sin(e * Math.PI / 180) * Math.sin(L * Math.PI / 180)) * 180 / Math.PI;
-
-            let tz = 3.5; // IRST TimeZone
-            let noon = 12 + tz - lng/15 - EqT;
-
-            function hourAngle(angle) {
-                let cosHA = (Math.sin(angle * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * Math.sin(Decl * Math.PI / 180)) / (Math.cos(lat * Math.PI / 180) * Math.cos(Decl * Math.PI / 180));
-                if (cosHA > 1 || cosHA < -1) return 0;
-                return Math.acos(cosHA) * 180 / Math.PI / 15;
-            }
-
-            let fajrHA = hourAngle(-17.7);
-            let sunriseHA = hourAngle(-0.833);
-            let sunsetHA = hourAngle(-0.833);
-            let maghribHA = hourAngle(-4.5);
-
-            let fajr = noon - fajrHA;
-            let sunrise = noon - sunriseHA;
-            let dhuhr = noon;
-            let sunset = noon + sunsetHA;
-            let maghrib = noon + maghribHA;
-            let midnight = sunset + (fajr + 24 - sunset) / 2;
-            if (midnight >= 24) midnight -= 24;
-
-            return { fajr, sunrise, dhuhr, sunset, maghrib, midnight };
-        }
-
-        function formatHourMinute(h) {
-            h = (h + 24) % 24;
-            let hours = Math.floor(h);
-            let minutes = Math.floor((h - hours) * 60);
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        }
-
-        let currentPrayerData = null;
-
-        function updatePrayerTimes() {
-            const idx = citySelect.value;
-            const city = cities[idx];
-            document.getElementById('selectedCityName').innerText = city.name;
-
-            const now = new Date();
-            const raw = computePrayerTimes(now, city.lat, city.lng);
-            currentPrayerData = raw;
-
-            document.getElementById('prayFajr').innerText = formatHourMinute(raw.fajr);
-            document.getElementById('praySunrise').innerText = formatHourMinute(raw.sunrise);
-            document.getElementById('prayDhuhr').innerText = formatHourMinute(raw.dhuhr);
-            document.getElementById('praySunset').innerText = formatHourMinute(raw.sunset);
-            document.getElementById('prayMaghrib').innerText = formatHourMinute(raw.maghrib);
-            document.getElementById('prayMidnight').innerText = formatHourMinute(raw.midnight);
-        }
-
-        function updateCountdown() {
-            if (!currentPrayerData) return;
-            const now = new Date();
-            const curH = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-
-            const list = [
-                { name: 'اذان صبح', time: currentPrayerData.fajr },
-                { name: 'طلوع آفتاب', time: currentPrayerData.sunrise },
-                { name: 'اذان ظهر', time: currentPrayerData.dhuhr },
-                { name: 'غروب آفتاب', time: currentPrayerData.sunset },
-                { name: 'اذان مغرب', time: currentPrayerData.maghrib },
-                { name: 'نیمه‌شب شرعی', time: currentPrayerData.midnight }
-            ];
-
-            let next = list.find(p => p.time > curH);
-            if (!next) next = { name: 'اذان صبح فردا', time: currentPrayerData.fajr + 24 };
-
-            let diffHours = next.time - curH;
-            let diffSecs = Math.floor(diffHours * 3600);
-
-            let hrs = Math.floor(diffSecs / 3600);
-            let mins = Math.floor((diffSecs % 3600) / 60);
-            let secs = diffSecs % 60;
-
-            document.getElementById('nextPrayerName').innerText = next.name;
-            document.getElementById('nextPrayerCountdown').innerText = 
-                `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-        }
-
-        // --- 6. AGE CALCULATOR LOGIC ---
-        let ageInterval = null;
-
-        function startAgeCalc() {
-            if (ageInterval) clearInterval(ageInterval);
-            
-            const by = parseInt(document.getElementById('birthYear').value);
-            const bm = parseInt(document.getElementById('birthMonth').value);
-            const bd = parseInt(document.getElementById('birthDay').value);
-
-            if (!by || !bm || !bd) return;
-
-            const [gy, gm, gd] = jalaliToGregorian(by, bm, bd);
-            const birthDate = new Date(gy, gm - 1, gd);
-
-            // Zodiac & Animal
-            const zodiacs = ["فروردین (حمل)", "اردیبهشت (ثور)", "خرداد (جوزا)", "تیر (سرطان)", "مرداد (اسد)", "شهریور (سنبله)", "مهر (میزان)", "آبان (عقرب)", "آذر (قوس)", "دی (جدی)", "بهمن (دلو)", "اسفند (حوت)"];
-            document.getElementById('zodiacSign').innerText = zodiacs[bm - 1] || "---";
-
-            const animals = ["موش", "گاو", "ببر", "خرگوش", "اژدها", "مار", "اسب", "بز", "میمون", "خروس", "سگ", "خوک"];
-            document.getElementById('animalYear').innerText = animals[(by - 4) % 12] || "---";
-
-            const daysWeek = ["یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه", "شنبه"];
-            document.getElementById('bornDayOfWeek').innerText = daysWeek[birthDate.getDay()];
-
-            function tickAge() {
-                const now = new Date();
-                let diffMs = now - birthDate;
-                if (diffMs < 0) return;
-
-                let secs = Math.floor(diffMs / 1000);
-                let years = Math.floor(secs / (365.25 * 86400));
-                let remSecs = secs - Math.floor(years * 365.25 * 86400);
-                let months = Math.floor(remSecs / (30.4375 * 86400));
-                let remDays = Math.floor((remSecs - Math.floor(months * 30.4375 * 86400)) / 86400);
-
-                document.getElementById('ageYears').innerText = years;
-                document.getElementById('ageMonths').innerText = months;
-                document.getElementById('ageDays').innerText = remDays;
-                document.getElementById('ageSecs').innerText = secs.toLocaleString('fa-IR');
-            }
-
-            tickAge();
-            ageInterval = setInterval(tickAge, 1000);
-        }
-
-        // --- 7. WORLD CLOCKS GENERATION ---
-        function initWorldClocks() {
-            const grid = document.getElementById('worldClocksGrid');
-            grid.innerHTML = '';
-
-            worldCities.forEach((city, idx) => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-2";
-                card.innerHTML = `
-                    <div class="flex justify-between items-center text-xs text-slate-400">
-                        <span class="font-bold text-slate-200"><i class="fa-solid ${city.icon} text-cyan-400 ml-1.5"></i>${city.name}</span>
-                        <span>${city.country}</span>
-                    </div>
-                    <div id="wClock-${idx}" class="text-2xl font-black font-mono text-cyan-300">00:00:00</div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function updateWorldClocks() {
-            const now = new Date();
-            worldCities.forEach((city, idx) => {
-                try {
-                    const timeStr = new Intl.DateTimeFormat('fa-IR', {
-                        timeZone: city.zone,
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                        hour12: false
-                    }).format(now);
-                    const el = document.getElementById(`wClock-${idx}`);
-                    if (el) el.innerText = timeStr;
-                } catch(e) {}
-            });
-        }
-
-        // --- 8. INITIALIZATION & LIVE TICK ---
-        function initApp() {
-            initWorldClocks();
-            updatePrayerTimes();
-            convertJalaliDate();
-            startAgeCalc();
-
-            // Load Today Occasions
-            document.getElementById('todayOccasions').innerHTML = `
-                <li class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex items-center gap-2 text-xs">
-                    <i class="fa-solid fa-star text-amber-400"></i>
-                    <span>امروز یک روز جدید و پر از انرژی و فرصت‌های تازه است!</span>
-                </li>
-            `;
-
-            setInterval(() => {
-                const now = new Date();
-                
-                // Live Header & Main Clock
-                const timeStr = now.toLocaleTimeString('fa-IR', { hour12: false });
-                document.getElementById('liveHeaderTime').innerText = timeStr;
-                document.getElementById('mainDigitalClock').innerText = timeStr;
-
-                // Live Dates
-                const dayName = new Intl.DateTimeFormat('fa-IR', { weekday: 'long' }).format(now);
-                document.getElementById('mainDayOfWeek').innerText = `امروز ${dayName}`;
-
-                // Jalali Date
-                const jDate = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: 'long', day: 'numeric' }).format(now);
-                document.getElementById('dateJalali').innerText = jDate;
-
-                // Gregorian Date
-                const gDate = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(now);
-                document.getElementById('dateGregorian').innerText = gDate;
-
-                // Hijri Date
-                try {
-                    const hDate = new Intl.DateTimeFormat('fa-IR-u-ca-islamic-uma', { year: 'numeric', month: 'long', day: 'numeric' }).format(now);
-                    document.getElementById('dateHijri').innerText = hDate;
-                } catch(e) {}
-
-                updateCountdown();
-                updateWorldClocks();
-            }, 1000);
-        }
-
-        window.onload = initApp;
-    </script>
+      </div>
+      <div style="margin-top:10px;">
+        <label>حروف فارسی:</label>
+        <div class="result-box" id="resFaWords">-</div>
+      </div>
+      <div style="margin-top:10px;">
+        <label>حروف انگلیسی:</label>
+        <div class="result-box" id="resEnWords">-</div>
+      </div>
+    </div>
+
+    <!-- بخش ارز -->
+    <div id="sec-curr" class="content-section">
+      <div class="form-group">
+        <label>مقدار:</label>
+        <input type="number" id="currAmount" value="1" oninput="calcCurrency()">
+      </div>
+      <div class="grid-2">
+        <div>
+          <label>از ارز:</label>
+          <select id="currFrom" onchange="calcCurrency()">
+            <option value="IRR">ریال ایران (IRR)</option>
+            <option value="OMR" selected>ریال عمان (OMR)</option>
+            <option value="TRY">لیر ترکیه (TRY)</option>
+            <option value="GBP">پوند انگلیس (GBP)</option>
+            <option value="USD">دلار آمریکا (USD)</option>
+          </select>
+        </div>
+        <div>
+          <label>به ارز:</label>
+          <select id="currTo" onchange="calcCurrency()">
+            <option value="IRR">ریال ایران (IRR)</option>
+            <option value="OMR">ریال عمان (OMR)</option>
+            <option value="TRY" selected>لیر ترکیه (TRY)</option>
+            <option value="GBP">پوند انگلیس (GBP)</option>
+            <option value="USD">دلار آمریکا (USD)</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:15px;">
+        <label>نتیجه تبدیل:</label>
+        <div class="result-box" id="currResult">-</div>
+      </div>
+    </div>
+
+    <!-- بخش تخفیف -->
+    <div id="sec-disc" class="content-section">
+      <div class="form-group">
+        <label>قیمت اصلی:</label>
+        <input type="number" id="discPrice" placeholder="مثلاً 100000" oninput="calcDiscount()">
+      </div>
+      <div class="form-group">
+        <label>درصد تخفیف (%):</label>
+        <input type="number" id="discPercent" placeholder="مثلاً 20" oninput="calcDiscount()">
+      </div>
+      <div class="grid-2">
+        <div>
+          <label>مبلغ تخفیف:</label>
+          <div class="result-box" id="discAmount">-</div>
+        </div>
+        <div>
+          <label>قیمت نهایی:</label>
+          <div class="result-box" id="finalPrice">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ماشین حساب -->
+    <div id="sec-calc" class="content-section">
+      <input type="text" id="calcScreen" readonly style="font-size:24px; text-align:left; margin-bottom:10px;">
+      <div class="calc-btn-grid">
+        <button class="btn" onclick="pressCalc('C')">C</button>
+        <button class="btn" onclick="pressCalc('/')">÷</button>
+        <button class="btn" onclick="pressCalc('*')">×</button>
+        <button class="btn" onclick="pressCalc('-')">-</button>
+        <button class="btn" onclick="pressCalc('7')">7</button>
+        <button class="btn" onclick="pressCalc('8')">8</button>
+        <button class="btn" onclick="pressCalc('9')">9</button>
+        <button class="btn" onclick="pressCalc('+')">+</button>
+        <button class="btn" onclick="pressCalc('4')">4</button>
+        <button class="btn" onclick="pressCalc('5')">5</button>
+        <button class="btn" onclick="pressCalc('6')">6</button>
+        <button class="btn btn-action" onclick="pressCalc('=')">=</button>
+        <button class="btn" onclick="pressCalc('1')">1</button>
+        <button class="btn" onclick="pressCalc('2')">2</button>
+        <button class="btn" onclick="pressCalc('3')">3</button>
+        <button class="btn" onclick="pressCalc('0')">0</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('sec-' + name).classList.add('active');
+    }
+
+    // تبدیل اعداد
+    const faDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    const enDigits = ['0','1','2','3','4','5','6','7','8','9'];
+    const faWordsMap = {0:'صفر',1:'یک',2:'دو',3:'سه',4:'چهار',5:'پنج',6:'شش',7:'هفت',8:'هشت',9:'نه',10:'ده',11:'یازده',12:'دوازده',13:'سیزده',14:'چهارده',15:'پانزده',16:'شانزده',17:'هفده',18:'هجده',19:'نوزده',20:'بیست',30:'سی',40:'چهل',50:'پنجاه',60:'شصت',70:'هفتاد',80:'هشتاد',90:'نود',100:'صد'};
+    const enWordsMap = {0:'zero',1:'one',2:'two',3:'three',4:'four',5:'five',6:'six',7:'seven',8:'eight',9:'nine',10:'ten',11:'eleven',12:'twelve',13:'thirteen',14:'fourteen',15:'fifteen',16:'sixteen',17:'seventeen',18:'eighteen',19:'nineteen',20:'twenty',30:'thirty',40:'forty',50:'fifty',60:'sixty',70:'seventy',80:'eighty',90:'ninety',100:'one hundred'};
+
+    function convertNumber() {
+      let val = document.getElementById('numInput').value.trim().toLowerCase();
+      if(!val) {
+        document.getElementById('resEnDigits').innerText = '-';
+        document.getElementById('resFaDigits').innerText = '-';
+        document.getElementById('resFaWords').innerText = '-';
+        document.getElementById('resEnWords').innerText = '-';
+        return;
+      }
+      
+      // تبدیل ارقام فارسی به انگلیسی برای محاسبه
+      let normVal = val.replace(/[۰-۹]/g, d => faDigits.indexOf(d));
+      let num = parseInt(normVal);
+
+      // یافتن عدد بر اساس کلمه
+      if (isNaN(num)) {
+        for (let k in faWordsMap) { if (faWordsMap[k] === val) num = parseInt(k); }
+        for (let k in enWordsMap) { if (enWordsMap[k] === val) num = parseInt(k); }
+      }
+
+      if (!isNaN(num)) {
+        let strNum = num.toString();
+        document.getElementById('resEnDigits').innerText = strNum;
+        document.getElementById('resFaDigits').innerText = strNum.replace(/\d/g, d => faDigits[d]);
+        document.getElementById('resFaWords').innerText = faWordsMap[num] || 'نمایش ساده: ' + strNum;
+        document.getElementById('resEnWords').innerText = enWordsMap[num] || 'Simple: ' + strNum;
+      } else {
+        document.getElementById('resEnDigits').innerText = val;
+        document.getElementById('resFaDigits').innerText = val.replace(/\d/g, d => faDigits[d]);
+        document.getElementById('resFaWords').innerText = 'متن ناشناخته';
+        document.getElementById('resEnWords').innerText = 'Unknown text';
+      }
+    }
+
+    // نرخ ثابت ارزها بر پایه دلار
+    const rates = { USD: 1, OMR: 0.385, GBP: 0.78, TRY: 32.5, IRR: 600000 };
+    function calcCurrency() {
+      let amt = parseFloat(document.getElementById('currAmount').value) || 0;
+      let from = document.getElementById('currFrom').value;
+      let to = document.getElementById('currTo').value;
+      let inUSD = amt / rates[from];
+      let res = inUSD * rates[to];
+      document.getElementById('currResult').innerText = res.toLocaleString('fa-IR', {maximumFractionDigits: 2}) + ' ' + to;
+    }
+
+    // محاسبه تخفیف
+    function calcDiscount() {
+      let p = parseFloat(document.getElementById('discPrice').value) || 0;
+      let d = parseFloat(document.getElementById('discPercent').value) || 0;
+      let disc = (p * d) / 100;
+      let final = p - disc;
+      document.getElementById('discAmount').innerText = disc.toLocaleString('fa-IR');
+      document.getElementById('finalPrice').innerText = final.toLocaleString('fa-IR');
+    }
+
+    // ماشین حساب
+    let calcExpr = '';
+    function pressCalc(v) {
+      if(v === 'C') { calcExpr = ''; }
+      else if(v === '=') {
+        try { calcExpr = eval(calcExpr).toString(); } catch { calcExpr = 'خطا'; }
+      } else { calcExpr += v; }
+      document.getElementById('calcScreen').value = calcExpr;
+    }
+  </script>
 </body>
 </html>
