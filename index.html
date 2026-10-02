@@ -1,310 +1,528 @@
-'use strict';
-
-/* ---------- Helpers ---------- */
-const $ = (id) => document.getElementById(id);
-const FA = '۰۱۲۳۴۵۶۷۸۹', AR = '٠١٢٣٤٥٦٧٨٩';
-const toEnDigits = (s) => s.replace(/[۰-۹]/g, (d) => FA.indexOf(d)).replace(/[٠-٩]/g, (d) => AR.indexOf(d))
-  .replace(/[٬,،\s]/g, '').replace(/[٫]/g, '.');
-const toFaDigits = (s) => s.replace(/\d/g, (d) => FA[d]);
-const groupInt = (s) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-const store = {
-  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
-  del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } },
-};
-
-let toastTimer;
-function showToast(msg) {
-  const t = $('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
-}
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); }
-  catch { // fallback for non-secure contexts / older browsers
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); } finally { ta.remove(); }
-  }
-  showToast('کپی شد!');
-}
-document.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-copy]');
-  if (!b) return;
-  const text = $(b.dataset.copy).textContent.trim();
-  if (text && text !== '-') copyText(text);
-});
-
-/* ---------- Tabs ---------- */
-document.querySelectorAll('.tab-btn').forEach((btn) => btn.addEventListener('click', () => {
-  document.querySelectorAll('.tab-btn').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
-  document.querySelectorAll('.content-section').forEach((s) => s.classList.remove('active'));
-  btn.classList.add('active'); btn.setAttribute('aria-selected', 'true');
-  $('sec-' + btn.dataset.tab).classList.add('active');
-}));
-
-/* ---------- 1. Numbers <-> words ---------- */
-const FA_ONES = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
-const FA_TEENS = ['ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
-const FA_TENS = ['', 'ده', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
-const FA_HUNDREDS = ['', 'صد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
-const FA_SCALES = ['', 'هزار', 'میلیون', 'میلیارد', 'تریلیون', 'کوادریلیون', 'کوینتیلیون'];
-const FA_FRAC = ['', 'دهم', 'صدم', 'هزارم', 'ده‌هزارم', 'صدهزارم', 'میلیونیم', 'ده‌میلیونیم', 'صدمیلیونیم', 'میلیاردیم'];
-const EN_ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
-  'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-const EN_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-const EN_SCALES = ['', 'thousand', 'million', 'billion', 'trillion', 'quadrillion', 'quintillion'];
-const MAX_INT_DIGITS = 21, MAX_DEC_DIGITS = 9;
-
-function chunkWords(n, lang) { // n: 1..999
-  if (lang === 'fa') {
-    const r = n % 100, out = [];
-    if (n >= 100) out.push(FA_HUNDREDS[Math.floor(n / 100)]);
-    if (r >= 10 && r < 20) out.push(FA_TEENS[r - 10]);
-    else { if (r >= 20) out.push(FA_TENS[Math.floor(r / 10)]); if (r % 10) out.push(FA_ONES[r % 10]); }
-    return out.join(' و ');
-  }
-  const out = [];
-  if (n >= 100) { out.push(EN_ONES[Math.floor(n / 100)] + ' hundred'); n %= 100; }
-  if (n >= 20) out.push(EN_TENS[Math.floor(n / 10)] + (n % 10 ? '-' + EN_ONES[n % 10] : ''));
-  else if (n > 0) out.push(EN_ONES[n]);
-  return out.join(' and ');
-}
-function intWords(big, lang) { // big: BigInt >= 0
-  if (big === 0n) return lang === 'fa' ? 'صفر' : 'zero';
-  const scales = lang === 'fa' ? FA_SCALES : EN_SCALES, parts = [];
-  for (let i = 0; big > 0n; i++, big /= 1000n) {
-    const c = Number(big % 1000n);
-    if (c) parts.unshift(chunkWords(c, lang) + (scales[i] ? ' ' + scales[i] : ''));
-  }
-  return parts.join(lang === 'fa' ? ' و ' : ', ');
-}
-function numberWords(sign, intStr, decStr, lang) {
-  let out = intWords(BigInt(intStr), lang);
-  if (decStr) {
-    out += lang === 'fa'
-      ? ' ممیز ' + intWords(BigInt(decStr), 'fa') + ' ' + FA_FRAC[decStr.length]
-      : ' point ' + [...decStr].map((d) => (d === '0' ? 'zero' : EN_ONES[d])).join(' ');
-  }
-  return sign ? (lang === 'fa' ? 'منفی ' : 'minus ') + out : out;
-}
-
-// words -> number (supports compound Persian/English words, e.g. "صد و بیست", "two hundred thirty")
-const WORDS = {};
-FA_ONES.forEach((w, i) => w && (WORDS[w] = i));
-FA_TEENS.forEach((w, i) => (WORDS[w] = 10 + i));
-FA_TENS.forEach((w, i) => w && (WORDS[w] = i * 10));
-FA_HUNDREDS.forEach((w, i) => w && (WORDS[w] = i * 100));
-EN_ONES.forEach((w, i) => w && (WORDS[w] = i));
-EN_TENS.forEach((w, i) => w && (WORDS[w] = i * 10));
-WORDS['صفر'] = 0; WORDS.zero = 0; WORDS['شیش'] = 6;
-const SCALE_VALUES = {};
-FA_SCALES.forEach((w, i) => w && (SCALE_VALUES[w] = 1000 ** i));
-EN_SCALES.forEach((w, i) => w && (SCALE_VALUES[w] = 1000 ** i));
-SCALE_VALUES['بیلیون'] = 1e12;
-
-function wordsToNumber(text) {
-  let tokens = text.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\u200c\-,،]/g, ' ').split(/\s+/)
-    .filter((t) => t && t !== 'و' && t !== 'and');
-  let neg = false;
-  if (tokens[0] === 'منفی' || tokens[0] === 'minus') { neg = true; tokens = tokens.slice(1); }
-  if (!tokens.length) return null;
-  let total = 0, cur = 0;
-  for (const t of tokens) {
-    if (t in WORDS) cur += WORDS[t];
-    else if (t === 'hundred') cur = (cur || 1) * 100;
-    else if (t in SCALE_VALUES) { total += (cur || 1) * SCALE_VALUES[t]; cur = 0; }
-    else return null;
-  }
-  total += cur;
-  if (!Number.isSafeInteger(total)) return null;
-  return { sign: neg && total !== 0, intStr: String(total), decStr: '' };
-}
-
-function parseNumberInput(raw) {
-  const norm = toEnDigits(raw.trim().toLowerCase());
-  const m = /^([+-])?(\d*)(?:\.(\d*))?$/.exec(norm);
-  if (m && (m[2] || m[3])) {
-    return { sign: m[1] === '-', intStr: (m[2] || '0').replace(/^0+(?=\d)/, ''), decStr: (m[3] || '').replace(/0+$/, '') };
-  }
-  return wordsToNumber(raw.trim().toLowerCase());
-}
-
-function convertNumber() {
-  const ids = ['resEnDigits', 'resFaDigits', 'resFaWords', 'resEnWords'];
-  const set = (vals) => ids.forEach((id, i) => ($(id).textContent = vals[i]));
-  const raw = $('numInput').value;
-  if (!raw.trim()) return set(['-', '-', '-', '-']);
-  const p = parseNumberInput(raw);
-  if (!p) return set(['-', '-', 'ورودی نامعتبر است', 'Invalid input']);
-  if (p.intStr.length > MAX_INT_DIGITS) return set(['-', '-', 'عدد بیش از حد بزرگ است', 'Number too large']);
-  const decStr = p.decStr.slice(0, MAX_DEC_DIGITS).replace(/0+$/, '');
-  const en = (p.sign ? '-' : '') + groupInt(p.intStr) + (decStr ? '.' + decStr : '');
-  const fa = toFaDigits(en).replace(/,/g, '٬').replace(/\./g, '٫');
-  set([en, fa, numberWords(p.sign, p.intStr, decStr, 'fa'), numberWords(p.sign, p.intStr, decStr, 'en')]);
-}
-$('numInput').addEventListener('input', convertNumber);
-
-/* ---------- 2. Currency ---------- */
-const CURRENCIES = [['USD', 'دلار آمریکا'], ['OMR', 'ریال عمان'], ['TRY', 'لیر ترکیه'], ['GBP', 'پوند انگلیس'],
-  ['EUR', 'یورو'], ['AED', 'درهم امارات'], ['IRT', 'تومان ایران'], ['IRR', 'ریال ایران']];
-// Fallback rates per 1 USD (approximate; use "live rates" or edit manually). IRT is a free-market value: set it yourself.
-const DEFAULT_RATES = { USD: 1, OMR: 0.3845, TRY: 49.15, GBP: 0.7565, EUR: 0.86, AED: 3.6725, IRT: 60000 };
-const LIVE_CODES = ['OMR', 'TRY', 'GBP', 'EUR', 'AED'];
-const EDITABLE = ['OMR', 'TRY', 'GBP', 'EUR', 'AED', 'IRT'];
-let rates = { ...DEFAULT_RATES }, rateMeta = '';
-
-const rateOf = (c) => (c === 'IRR' ? rates.IRT * 10 : rates[c]);
-
-function saveRates() { store.set('sc.rates', { rates, meta: rateMeta }); }
-function renderRateInputs() { EDITABLE.forEach((c) => ($('rate_' + c).value = rates[c])); }
-function setStatus(msg) { $('rateStatus').textContent = msg; }
-
-function calcCurrency() {
-  const amt = parseFloat($('currAmount').value);
-  const from = $('currFrom').value, to = $('currTo').value;
-  const rf = rateOf(from), rt = rateOf(to);
-  if (!(rf > 0) || !(rt > 0)) { $('currResult').textContent = '-'; $('rateInfo').textContent = 'نرخ نامعتبر است'; return; }
-  const decimals = ['OMR', 'GBP'].includes(to) ? 3 : ['IRT', 'IRR'].includes(to) ? 0 : 2;
-  const fmt = (n) => n.toLocaleString('fa-IR', { maximumFractionDigits: decimals });
-  $('currResult').textContent = Number.isFinite(amt) ? fmt((amt / rf) * rt) + ' ' + to : '-';
-  $('rateInfo').textContent = `۱ ${from} = ${fmt(rt / rf)} ${to}`;
-}
-
-async function fetchLiveRates() {
-  const btn = $('liveBtn');
-  btn.disabled = true; setStatus('در حال دریافت نرخ‌ها…');
-  try {
-    const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(8000) });
-    const data = await res.json();
-    if (data.result !== 'success') throw new Error('bad response');
-    LIVE_CODES.forEach((c) => { if (data.rates[c] > 0) rates[c] = data.rates[c]; });
-    rateMeta = 'نرخ لحظه‌ای: ' + new Date().toLocaleString('fa-IR') + ' (تومان دستی است)';
-    saveRates(); renderRateInputs(); calcCurrency(); setStatus(rateMeta);
-  } catch {
-    setStatus('دریافت نرخ ناموفق بود؛ از نرخ‌های ذخیره‌شده استفاده می‌شود.');
-  } finally { btn.disabled = false; }
-}
-
-function initCurrency() {
-  const opts = CURRENCIES.map(([c, n]) => `<option value="${c}">${n} (${c})</option>`).join('');
-  $('currFrom').innerHTML = opts; $('currTo').innerHTML = opts;
-  $('currFrom').value = 'OMR'; $('currTo').value = 'TRY';
-  $('rateInputs').innerHTML = EDITABLE.map((c) =>
-    `<div><label for="rate_${c}">${c}:</label><input type="number" min="0" step="any" id="rate_${c}"></div>`).join('');
-  const saved = store.get('sc.rates');
-  if (saved && saved.rates) { rates = { ...DEFAULT_RATES, ...saved.rates }; rateMeta = saved.meta || ''; }
-  renderRateInputs(); setStatus(rateMeta || 'نرخ‌های پیش‌فرض (تقریبی)؛ برای نرخ به‌روز دکمه دریافت را بزنید.');
-
-  ['currAmount', 'currFrom', 'currTo'].forEach((id) => $(id).addEventListener('input', calcCurrency));
-  $('rateInputs').addEventListener('input', (e) => {
-    const c = e.target.id.replace('rate_', ''), v = parseFloat(e.target.value);
-    if (v > 0) { rates[c] = v; rateMeta = 'نرخ‌ها به‌صورت دستی ویرایش شده‌اند'; saveRates(); setStatus(rateMeta); calcCurrency(); }
-  });
-  $('rateEditToggle').addEventListener('click', () => { $('rateEditBox').hidden = !$('rateEditBox').hidden; });
-  $('liveBtn').addEventListener('click', fetchLiveRates);
-  $('resetRates').addEventListener('click', () => {
-    rates = { ...DEFAULT_RATES }; rateMeta = ''; store.del('sc.rates');
-    renderRateInputs(); calcCurrency(); setStatus('نرخ‌ها به مقادیر پیش‌فرض بازنشانی شد.');
-  });
-  calcCurrency();
-}
-
-/* ---------- 3. Discount ---------- */
-function calcDiscount() {
-  const priceStr = $('discPrice').value;
-  const clamp = (v, max) => Math.min(Math.max(parseFloat(v) || 0, 0), max);
-  const price = Math.max(parseFloat(priceStr) || 0, 0);
-  const disc = clamp($('discPercent').value, 100), tax = clamp($('taxPercent').value, Infinity);
-  const out = ['discAmount', 'taxAmount', 'finalPrice'];
-  if (priceStr === '') return out.forEach((id) => ($(id).textContent = '-'));
-  const round = (n) => Math.round(n * 100) / 100;
-  const discAmount = round(price * disc / 100), after = price - discAmount, taxAmount = round(after * tax / 100);
-  const fmt = (n) => n.toLocaleString('fa-IR', { maximumFractionDigits: 2 });
-  $('discAmount').textContent = fmt(discAmount);
-  $('taxAmount').textContent = fmt(taxAmount);
-  $('finalPrice').textContent = fmt(round(after + taxAmount));
-}
-['discPrice', 'discPercent', 'taxPercent'].forEach((id) => $(id).addEventListener('input', calcDiscount));
-
-/* ---------- 4. Calculator (safe parser, no eval) ---------- */
-function evaluate(src) {
-  const t = src.match(/\d+\.?\d*|\.\d+|[-+*/%()]/g);
-  if (!t || t.join('') !== src) throw new Error('syntax');
-  let i = 0;
-  const expr = () => {
-    let l = term();
-    while (t[i] === '+' || t[i] === '-') {
-      const op = t[i++], r = term();
-      const rv = r.pct ? l.v * r.v : r.v; // "200+10%" => 220
-      l = { v: op === '+' ? l.v + rv : l.v - rv, pct: false };
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تبدیلگر هوشمند | پیشرفته و کاربردی</title>
+  <style>
+    :root {
+      --bg-main: #fdfbf7;
+      --bg-card: #ffffff;
+      --primary: #5c3a21;
+      --primary-hover: #422815;
+      --secondary: #8c5a35;
+      --cream-light: #f5efe6;
+      --cream-medium: #e8dccb;
+      --accent-gold: #d4a373;
+      --text-dark: #2b1e16;
+      --text-muted: #6e5d4f;
+      --border-color: #dfd0be;
+      --success: #2e7d32;
     }
-    return l;
-  };
-  const term = () => {
-    let l = unary();
-    while (t[i] === '*' || t[i] === '/') {
-      const op = t[i++], r = unary();
-      if (op === '/' && r.v === 0) throw new Error('div0');
-      l = { v: op === '*' ? l.v * r.v : l.v / r.v, pct: false };
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-dark); padding: 15px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+    .container { width: 100%; max-width: 620px; background: var(--bg-card); border-radius: 20px; border: 2px solid var(--border-color); box-shadow: 0 10px 25px rgba(92,58,33,0.1); overflow: hidden; }
+    
+    .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; padding: 20px; text-align: center; }
+    .header h1 { font-size: 24px; margin-bottom: 5px; color: var(--cream-light); }
+    .header p { font-size: 13px; opacity: 0.9; }
+
+    .nav-tabs { display: flex; background: var(--cream-medium); padding: 6px; gap: 6px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+    .tab-btn { flex: 1; min-width: 90px; padding: 10px 5px; border: none; background: transparent; color: var(--text-dark); font-weight: bold; font-size: 13px; border-radius: 10px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+    .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+
+    .content-section { display: none; padding: 20px; animation: fadeIn 0.2s ease-in-out; }
+    .content-section.active { display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 13px; color: var(--text-muted); }
+    
+    input, select { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 15px; background: var(--bg-main); color: var(--text-dark); text-align: center; outline: none; transition: 0.2s; }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(92,58,33,0.15); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .result-wrapper { position: relative; margin-top: 5px; }
+    .result-box { background: var(--cream-light); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 35px 12px 12px; text-align: center; font-size: 17px; font-weight: bold; color: var(--primary); min-height: 48px; word-break: break-word; display: flex; align-items: center; justify-content: center; }
+    
+    .copy-btn { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: var(--cream-medium); border: none; color: var(--primary); border-radius: 6px; padding: 5px 8px; font-size: 11px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .copy-btn:hover { background: var(--accent-gold); }
+
+    .rate-info { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px; font-weight: bold; }
+    .rate-edit-toggle { font-size: 11px; color: var(--secondary); text-decoration: underline; cursor: pointer; display: inline-block; margin-top: 4px; }
+
+    /* ماشین حساب */
+    .calc-screen-container { position: relative; margin-bottom: 12px; }
+    #calcScreen { font-size: 22px; text-align: right; dir: ltr; direction: ltr; font-family: monospace; background: #fff; padding-left: 10px; }
+    .calc-btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .btn { padding: 14px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--cream-light); color: var(--primary); font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.1s; user-select: none; }
+    .btn:active { transform: scale(0.97); background: var(--cream-medium); }
+    .btn-op { background: var(--cream-medium); color: var(--primary); }
+    .btn-action { background: var(--primary); color: #fff; grid-column: span 1; }
+    .btn-action:hover { background: var(--primary-hover); }
+    .btn-clear { background: #e57373; color: #fff; }
+
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 12px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>تبدیلگر هوشمند</h1>
+      <p>مبدل جامع اعداد، ارزها، تخفیف و ماشین حساب</p>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('num', event)">تبدیل اعداد</button>
+      <button class="tab-btn" onclick="switchTab('curr', event)">تبدیل ارز</button>
+      <button class="tab-btn" onclick="switchTab('disc', event)">تخفیف و درصد</button>
+      <button class="tab-btn" onclick="switchTab('calc', event)">ماشین حساب</button>
+    </div>
+
+    <!-- 1. بخش تبدیل اعداد -->
+    <div id="sec-num" class="content-section active">
+      <div class="form-group">
+        <label>ورودی (عدد فارسی/انگلیسی یا متن):</label>
+        <input type="text" id="numInput" placeholder="مثلاً: 1250000 یا ۱۲۵ یا دوازده" oninput="convertNumber()">
+      </div>
+      <div class="grid-2">
+        <div>
+          <label>ارقام انگلیسی:</label>
+          <div class="result-wrapper">
+            <div class="result-box" id="resEnDigits">-</div>
+            <button class="copy-btn" onclick="copyResult('resEnDigits')">کپی</button>
+          </div>
+        </div>
+        <div>
+          <label>ارقام فارسی:</label>
+          <div class="result-wrapper">
+            <div class="result-box" id="resFaDigits">-</div>
+            <button class="copy-btn" onclick="copyResult('resFaDigits')">کپی</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label>حروف فارسی:</label>
+        <div class="result-wrapper">
+          <div class="result-box" id="resFaWords">-</div>
+          <button class="copy-btn" onclick="copyResult('resFaWords')">کپی</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label>حروف انگلیسی:</label>
+        <div class="result-wrapper">
+          <div class="result-box" id="resEnWords">-</div>
+          <button class="copy-btn" onclick="copyResult('resEnWords')">کپی</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. بخش تبدیل ارز -->
+    <div id="sec-curr" class="content-section">
+      <div class="form-group">
+        <label>مقدار:</label>
+        <input type="number" id="currAmount" value="1" step="any" oninput="calcCurrency()">
+      </div>
+      <div class="grid-2">
+        <div>
+          <label>از ارز:</label>
+          <select id="currFrom" onchange="calcCurrency()">
+            <option value="USD">دلار آمریکا (USD)</option>
+            <option value="OMR" selected>ریال عمان (OMR)</option>
+            <option value="TRY">لیر ترکیه (TRY)</option>
+            <option value="GBP">پوند انگلیس (GBP)</option>
+            <option value="IRT">تومان ایران (IRT)</option>
+            <option value="IRR">ریال ایران (IRR)</option>
+          </select>
+        </div>
+        <div>
+          <label>به ارز:</label>
+          <select id="currTo" onchange="calcCurrency()">
+            <option value="USD">دلار آمریکا (USD)</option>
+            <option value="OMR">ریال عمان (OMR)</option>
+            <option value="TRY" selected>لیر ترکیه (TRY)</option>
+            <option value="GBP">پوند انگلیس (GBP)</option>
+            <option value="IRT">تومان ایران (IRT)</option>
+            <option value="IRR">ریال ایران (IRR)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="margin-top:15px;">
+        <label>نتیجه تبدیل:</label>
+        <div class="result-wrapper">
+          <div class="result-box" id="currResult">-</div>
+          <button class="copy-btn" onclick="copyResult('currResult')">کپی</button>
+        </div>
+      </div>
+      <div class="rate-info" id="rateRateInfo">--</div>
+
+      <div style="text-align:center; margin-top:8px;">
+        <span class="rate-edit-toggle" onclick="toggleRateEdit()">تنظیم/ویرایش دستی نرخ‌های ارز</span>
+      </div>
+
+      <div id="rateEditBox" style="display:none; margin-top:15px; background:var(--cream-light); padding:12px; border-radius:10px; border:1px solid var(--border-color);">
+        <label style="text-align:center; margin-bottom:8px;">نرخ مبنا (نسبت به ۱ دلار آمریکا):</label>
+        <div class="grid-2" style="font-size:12px;">
+          <div><label>ریال عمان (OMR):</label><input type="number" step="any" id="rate_OMR" oninput="updateCustomRates()"></div>
+          <div><label>لیر ترکیه (TRY):</label><input type="number" step="any" id="rate_TRY" oninput="updateCustomRates()"></div>
+          <div><label>پوند انگلیس (GBP):</label><input type="number" step="any" id="rate_GBP" oninput="updateCustomRates()"></div>
+          <div><label>تومان ایران (IRT):</label><input type="number" step="any" id="rate_IRT" oninput="updateCustomRates()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. بخش تخفیف -->
+    <div id="sec-disc" class="content-section">
+      <div class="form-group">
+        <label>قیمت اصلی:</label>
+        <input type="number" id="discPrice" placeholder="مثلاً 1000000" oninput="calcDiscount()">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>درصد تخفیف (%):</label>
+          <input type="number" id="discPercent" placeholder="مثلاً 20" oninput="calcDiscount()">
+        </div>
+        <div class="form-group">
+          <label>مالیات / ارزش افزوده (%):</label>
+          <input type="number" id="taxPercent" placeholder="مثلاً 10" oninput="calcDiscount()">
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:10px;">
+        <div>
+          <label>مبلغ تخفیف:</label>
+          <div class="result-wrapper">
+            <div class="result-box" id="discAmount">-</div>
+            <button class="copy-btn" onclick="copyResult('discAmount')">کپی</button>
+          </div>
+        </div>
+        <div>
+          <label>قیمت نهایی قابل پرداخت:</label>
+          <div class="result-wrapper">
+            <div class="result-box" id="finalPrice">-</div>
+            <button class="copy-btn" onclick="copyResult('finalPrice')">کپی</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. ماشین حساب -->
+    <div id="sec-calc" class="content-section">
+      <div class="calc-screen-container">
+        <input type="text" id="calcScreen" readonly placeholder="0">
+      </div>
+      <div class="calc-btn-grid">
+        <button class="btn btn-clear" onclick="pressCalc('C')">C</button>
+        <button class="btn btn-op" onclick="pressCalc('back')">⌫</button>
+        <button class="btn btn-op" onclick="pressCalc('%')">%</button>
+        <button class="btn btn-op" onclick="pressCalc('/')">÷</button>
+
+        <button class="btn" onclick="pressCalc('7')">7</button>
+        <button class="btn" onclick="pressCalc('8')">8</button>
+        <button class="btn" onclick="pressCalc('9')">9</button>
+        <button class="btn btn-op" onclick="pressCalc('*')">×</button>
+
+        <button class="btn" onclick="pressCalc('4')">4</button>
+        <button class="btn" onclick="pressCalc('5')">5</button>
+        <button class="btn" onclick="pressCalc('6')">6</button>
+        <button class="btn btn-op" onclick="pressCalc('-')">-</button>
+
+        <button class="btn" onclick="pressCalc('1')">1</button>
+        <button class="btn" onclick="pressCalc('2')">2</button>
+        <button class="btn" onclick="pressCalc('3')">3</button>
+        <button class="btn btn-op" onclick="pressCalc('+')">+</button>
+
+        <button class="btn" onclick="pressCalc('0')">0</button>
+        <button class="btn" onclick="pressCalc('.')">.</button>
+        <button class="btn btn-op" onclick="pressCalc('(')">(</button>
+        <button class="btn btn-action" onclick="pressCalc('=')">=</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">کپی شد!</div>
+
+  <script>
+    // اعلان پیام تعاملی کپی
+    function copyResult(elemId) {
+      const text = document.getElementById(elemId).innerText;
+      if (!text || text === '-') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1800);
+      });
     }
-    return l;
-  };
-  const unary = () => {
-    if (t[i] === '-') { i++; const o = unary(); return { v: -o.v, pct: o.pct }; }
-    if (t[i] === '+') { i++; return unary(); }
-    let p = primary();
-    while (t[i] === '%') { i++; p = { v: p.v / 100, pct: true }; }
-    return p;
-  };
-  const primary = () => {
-    const x = t[i++];
-    if (x === '(') { const e = expr(); if (t[i++] !== ')') throw new Error('paren'); return { v: e.v, pct: false }; }
-    if (x !== undefined && /^[\d.]/.test(x)) return { v: parseFloat(x), pct: false };
-    throw new Error('syntax');
-  };
-  const r = expr();
-  if (i !== t.length) throw new Error('syntax');
-  if (!Number.isFinite(r.v)) throw new Error('range');
-  return r.v;
-}
 
-let calcExpr = '', fresh = false;
-const OPS = '+-*/';
-function renderCalc() { $('calcScreen').value = calcExpr.replace(/\*/g, '×').replace(/\//g, '÷'); }
+    // تغییر زبانه
+    function switchTab(name, evt) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+      evt.currentTarget.classList.add('active');
+      document.getElementById('sec-' + name).classList.add('active');
+    }
 
-function pressCalc(k) {
-  if (calcExpr === 'خطا') calcExpr = '';
-  if (k === 'C') calcExpr = '';
-  else if (k === 'back') calcExpr = calcExpr.slice(0, -1);
-  else if (k === '=') {
-    if (!calcExpr) return;
-    try { calcExpr = String(parseFloat(evaluate(calcExpr).toPrecision(12))); fresh = true; }
-    catch { calcExpr = 'خطا'; }
-  } else {
-    const isDigit = /[\d.(]/.test(k);
-    if (fresh && isDigit) calcExpr = ''; // new number after a result
-    fresh = false;
-    const last = calcExpr.slice(-1);
-    if (OPS.includes(k)) {
-      if (!calcExpr && k !== '-') return;
-      if (OPS.includes(last)) { if (calcExpr.length === 1) return; calcExpr = calcExpr.slice(0, -1); }
-    } else if (k === '.' && /\d*\.\d*$/.test(calcExpr.match(/[\d.]*$/)[0])) return;
-    else if (k === '%' && (!calcExpr || OPS.includes(last) || last === '(')) return;
-    calcExpr += k;
-  }
-  renderCalc();
-}
-$('calcGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) pressCalc(b.dataset.k); });
-document.addEventListener('keydown', (e) => {
-  if (!$('sec-calc').classList.contains('active') || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (/^[\d.+\-*/%()]$/.test(e.key)) pressCalc(e.key);
-  else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); pressCalc('='); }
-  else if (e.key === 'Backspace') pressCalc('back');
-  else if (e.key === 'Escape') pressCalc('C');
-});
+    // --- 1. بخش تبدیل عدد به ارقام و حروف کامل ---
+    const faDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    const faWordsSimple = {'صفر':0,'یک':1,'دو':2,'سه':3,'چهار':4,'پنج':5,'شش':6,'هفت':7,'هشت':8,'نه':9,'ده':10,'یازده':11,'دوازده':12,'سیزده':13,'چهارده':14,'پانزده':15,'شانزده':16,'هفده':17,'هجده':18,'نوزده':19,'بیست':20,'سی':30,'چهل':40,'پنجاه':50,'شصت':60,'هفتاد':70,'هشتاد':80,'نود':90,'صد':100,'هزار':1000,'میلیون':1000000};
+    const enWordsSimple = {'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000,'million':1000000};
 
-/* ---------- Init ---------- */
-initCurrency();
+    function numToPersianWords(n) {
+      if (isNaN(n)) return 'عدد نامعتبر';
+      if (n === 0) return 'صفر';
+      if (n < 0) return 'منفی ' + numToPersianWords(Math.abs(n));
+
+      const yekan = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
+      const dahgan = ['', 'ده', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
+      const dahAft = ['ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
+      const sadgan = ['', 'صد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
+      const stages = ['', 'هزار', 'میلیون', 'میلیارد', 'تریلیون'];
+
+      function convertThree(num) {
+        let res = [];
+        let sad = Math.floor(num / 100);
+        let rem = num % 100;
+        let dah = Math.floor(rem / 10);
+        let yek = rem % 10;
+
+        if (sad > 0) res.push(sadgan[sad]);
+        if (rem >= 10 && rem < 20) {
+          res.push(dahAft[rem - 10]);
+        } else {
+          if (dah > 0) res.push(dahgan[dah]);
+          if (yek > 0) res.push(yekan[yek]);
+        }
+        return res.join(' و ');
+      }
+
+      let parts = n.toString().split('.');
+      let intPart = parseInt(parts[0], 10);
+      let decPart = parts[1];
+
+      let words = [];
+      let i = 0;
+      let temp = intPart;
+
+      if (temp === 0) words.push('صفر');
+      else {
+        while (temp > 0) {
+          let chunk = temp % 1000;
+          if (chunk > 0) {
+            let chunkW = convertThree(chunk);
+            let stg = stages[i];
+            words.unshift(stg ? chunkW + ' ' + stg : chunkW);
+          }
+          temp = Math.floor(temp / 1000);
+          i++;
+        }
+      }
+
+      let result = words.join(' و ');
+      if (decPart && parseInt(decPart, 10) > 0) {
+        result += ' ممیز ' + numToPersianWords(parseInt(decPart, 10));
+      }
+      return result;
+    }
+
+    function numToEnglishWords(n) {
+      if (isNaN(n)) return 'Invalid Number';
+      if (n === 0) return 'zero';
+      if (n < 0) return 'minus ' + numToEnglishWords(Math.abs(n));
+
+      const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+      const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+      const scales = ['', 'thousand', 'million', 'billion', 'trillion'];
+
+      function convertThree(num) {
+        let res = [];
+        if (num >= 100) {
+          res.push(ones[Math.floor(num / 100)] + ' hundred');
+          num %= 100;
+        }
+        if (num >= 20) {
+          let t = tens[Math.floor(num / 10)];
+          let o = ones[num % 10];
+          res.push(o ? t + '-' + o : t);
+        } else if (num > 0) {
+          res.push(ones[num]);
+        }
+        return res.join(' ');
+      }
+
+      let parts = n.toString().split('.');
+      let intPart = parseInt(parts[0], 10);
+      let decPart = parts[1];
+
+      let words = [];
+      let i = 0;
+      let temp = intPart;
+
+      if (temp === 0) words.push('zero');
+      else {
+        while (temp > 0) {
+          let chunk = temp % 1000;
+          if (chunk > 0) {
+            let chunkW = convertThree(chunk);
+            let sc = scales[i];
+            words.unshift(sc ? chunkW + ' ' + sc : chunkW);
+          }
+          temp = Math.floor(temp / 1000);
+          i++;
+        }
+      }
+
+      let result = words.join(', ');
+      if (decPart && parseInt(decPart, 10) > 0) {
+        result += ' point ' + numToEnglishWords(parseInt(decPart, 10));
+      }
+      return result;
+    }
+
+    function convertNumber() {
+      let rawVal = document.getElementById('numInput').value.trim().toLowerCase();
+      if (!rawVal) {
+        document.getElementById('resEnDigits').innerText = '-';
+        document.getElementById('resFaDigits').innerText = '-';
+        document.getElementById('resFaWords').innerText = '-';
+        document.getElementById('resEnWords').innerText = '-';
+        return;
+      }
+
+      // نرمال‌سازی ارقام فارسی و عربی به انگلیسی
+      let normVal = rawVal.replace(/[۰-۹]/g, d => faDigits.indexOf(d))
+                          .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+
+      let num = parseFloat(normVal);
+
+      // بررسی کلیدهای متنی
+      if (isNaN(num)) {
+        if (faWordsSimple[rawVal] !== undefined) num = faWordsSimple[rawVal];
+        if (enWordsSimple[rawVal] !== undefined) num = enWordsSimple[rawVal];
+      }
+
+      if (!isNaN(num)) {
+        let strNum = num.toLocaleString('en-US');
+        document.getElementById('resEnDigits').innerText = strNum;
+        document.getElementById('resFaDigits').innerText = strNum.replace(/\d/g, d => faDigits[d]);
+        document.getElementById('resFaWords').innerText = numToPersianWords(num);
+        document.getElementById('resEnWords').innerText = numToEnglishWords(num);
+      } else {
+        document.getElementById('resEnDigits').innerText = rawVal;
+        document.getElementById('resFaDigits').innerText = rawVal.replace(/\d/g, d => faDigits[d]);
+        document.getElementById('resFaWords').innerText = 'متن شناسایی نشد';
+        document.getElementById('resEnWords').innerText = 'Unrecognized Text';
+      }
+    }
+
+
+    // --- 2. بخش تبدیل ارز با نرخ‌های دقیق ---
+    // نرخ‌های واقعی بر پایه ۱ دلار آمریکا (USD)
+    let rates = {
+      USD: 1,
+      OMR: 0.3845,   // ۱ ریال عمان ≈ ۲.۶۰ دلار
+      GBP: 0.7565,   // ۱ پوند ≈ ۱.۳۲ دلار
+      TRY: 49.15,    // ۱ دلار ≈ ۴۹.۱۵ لیر
+      IRT: 60000,    // ۱ دلار ≈ ۶۰,۰۰۰ تومان (قابل تنظیم)
+      IRR: 600000    // ۱ دلار ≈ ۶۰۰,۰۰۰ ریال
+    };
+
+    function initRateInputs() {
+      document.getElementById('rate_OMR').value = rates.OMR;
+      document.getElementById('rate_TRY').value = rates.TRY;
+      document.getElementById('rate_GBP').value = rates.GBP;
+      document.getElementById('rate_IRT').value = rates.IRT;
+    }
+
+    function toggleRateEdit() {
+      let box = document.getElementById('rateEditBox');
+      box.style.display = (box.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function updateCustomRates() {
+      rates.OMR = parseFloat(document.getElementById('rate_OMR').value) || rates.OMR;
+      rates.TRY = parseFloat(document.getElementById('rate_TRY').value) || rates.TRY;
+      rates.GBP = parseFloat(document.getElementById('rate_GBP').value) || rates.GBP;
+      rates.IRT = parseFloat(document.getElementById('rate_IRT').value) || rates.IRT;
+      rates.IRR = rates.IRT * 10;
+      calcCurrency();
+    }
+
+    function calcCurrency() {
+      let amt = parseFloat(document.getElementById('currAmount').value) || 0;
+      let from = document.getElementById('currFrom').value;
+      let to = document.getElementById('currTo').value;
+
+      let inUSD = amt / rates[from];
+      let res = inUSD * rates[to];
+
+      // فرمت‌دهی اعشار بر اساس نوع ارز
+      let decimals = (to === 'OMR' || to === 'GBP') ? 3 : (to === 'IRT' || to === 'IRR' ? 0 : 2);
+      
+      let formattedRes = res.toLocaleString('fa-IR', { maximumFractionDigits: decimals });
+      document.getElementById('currResult').innerText = formattedRes + ' ' + to;
+
+      // نمایش نرخ معادل ۱ واحد
+      let singleUnitInUSD = 1 / rates[from];
+      let singleUnitConverted = singleUnitInUSD * rates[to];
+      document.getElementById('rateRateInfo').innerText = `۱ ${from} = ${singleUnitConverted.toLocaleString('fa-IR', { maximumFractionDigits: decimals })} ${to}`;
+    }
+
+
+    // --- 3. بخش تخفیف و درصد ---
+    function calcDiscount() {
+      let price = parseFloat(document.getElementById('discPrice').value) || 0;
+      let discPct = parseFloat(document.getElementById('discPercent').value) || 0;
+      let taxPct = parseFloat(document.getElementById('taxPercent').value) || 0;
+
+      let discAmount = (price * discPct) / 100;
+      let afterDisc = price - discAmount;
+      let taxAmount = (afterDisc * taxPct) / 100;
+      let finalPrice = afterDisc + taxAmount;
+
+      document.getElementById('discAmount').innerText = discAmount.toLocaleString('fa-IR');
+      document.getElementById('finalPrice').innerText = finalPrice.toLocaleString('fa-IR');
+    }
+
+
+    // --- 4. ماشین حساب امن و کاربردی ---
+    let calcExpr = '';
+
+    function pressCalc(v) {
+      let screen = document.getElementById('calcScreen');
+
+      if (v === 'C') {
+        calcExpr = '';
+      } else if (v === 'back') {
+        calcExpr = calcExpr.slice(0, -1);
+      } else if (v === '=') {
+        if (!calcExpr) return;
+        try {
+          // جایگزینی امن درصد و عملگرها
+          let evalExpr = calcExpr.replace(/×/g, '*').replace(/÷/g, '/');
+          evalExpr = evalExpr.replace(/(\d+(\.\d+)?)%/g, '($1/100)');
+          
+          let result = Function('"use strict";return (' + evalExpr + ')')();
+          calcExpr = Number.isInteger(result) ? result.toString() : result.toFixed(4).replace(/\.?0+$/, '');
+        } catch {
+          calcExpr = 'خطا';
+        }
+      } else {
+        if (calcExpr === 'خطا') calcExpr = '';
+        calcExpr += v;
+      }
+      screen.value = calcExpr;
+    }
+
+    // مقداردهی اولیه
+    window.onload = function() {
+      initRateInputs();
+      calcCurrency();
+    };
+  </script>
+</body>
+</html>
